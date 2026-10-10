@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <link rel="icon" href="data:," />
+  <title>Who Farted?</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito:wght@700;800;900&display=swap');
+    :root {
+      color-scheme: dark light;
+      --ink:#f6f7ec; --muted:#b7c1c3; --space:#081215; --panel:#132326;
+      --line:#355057; --acid:#c9ef43; --amber:#ffb84d; --danger:#ff6d63;
+      --shadow:rgba(0,0,0,.42); --button:#f6f7ec; --button-ink:#0c1719;
+    }
+    @media (prefers-color-scheme: light) {
+      :root { --ink:#152326; --muted:#53676b; --space:#dce7e5; --panel:#f5faf8; --line:#9db2b2; --shadow:rgba(27,50,54,.18); --button:#14262a; --button-ink:#f7faf2; }
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:var(--space);color:var(--ink);font-family:Nunito,system-ui,sans-serif;overflow:hidden;touch-action:none}
+    body{min-height:100dvh}
+    button{font:inherit}
+    .game{height:100dvh;display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-width:1180px;margin:auto;padding:10px;gap:9px}
+    .hud{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px 12px 6px 6px;padding:9px 12px;box-shadow:0 7px 24px var(--shadow)}
+    .mission{min-width:0}.mission strong{display:block;font-size:14px;line-height:1.1}.mission span{display:block;color:var(--muted);font:12px/1.2 'DM Mono',monospace;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .meter{width:clamp(84px,19vw,180px)}.meter-head{display:flex;justify-content:space-between;font:10px 'DM Mono',monospace;color:var(--muted);margin-bottom:4px}.meter-track{height:9px;border:1px solid var(--line);background:var(--space);border-radius:2px;overflow:hidden}.meter-fill{width:0;height:100%;background:linear-gradient(90deg,#74952a,var(--acid));transition:width .18s}
+    .evidence{font:11px 'DM Mono',monospace;text-align:right}.pips{display:flex;gap:4px;justify-content:flex-end;margin-top:4px}.pip{width:18px;height:8px;border:1px solid var(--line);border-radius:1px}.pip.on{background:var(--amber);border-color:var(--amber)}
+    .stage{position:relative;min-height:0;border:1px solid var(--line);background:#071114;border-radius:6px;overflow:hidden;box-shadow:0 12px 30px var(--shadow)}
+    canvas{width:100%;height:100%;display:block}
+    .toast{position:absolute;top:14px;left:50%;transform:translateX(-50%) translateY(-10px);background:rgba(7,17,20,.92);color:#f6f7ec;border:1px solid #466067;border-radius:6px;padding:8px 12px;font:12px 'DM Mono',monospace;opacity:0;transition:.2s;pointer-events:none;max-width:84%;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .room-label{position:absolute;right:10px;bottom:8px;color:#9fb0b3;font:10px 'DM Mono',monospace;letter-spacing:.08em;pointer-events:none}
+    .controls{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;min-height:66px}
+    .tip{font:11px/1.35 'DM Mono',monospace;color:var(--muted);max-width:260px}.tip b{color:var(--ink)}
+    .actions{display:flex;gap:8px;justify-content:flex-end}.action{border:0;border-radius:8px;min-height:46px;padding:0 15px;background:var(--button);color:var(--button-ink);box-shadow:0 4px 0 color-mix(in srgb,var(--button) 55%,#000);cursor:pointer;font-size:13px;font-weight:900;letter-spacing:.02em}.action:active{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--button) 55%,#000)}.action.acid{background:var(--acid);color:#142008;box-shadow:0 4px 0 #78941f}.action.danger{background:var(--danger);color:#2b0b08;box-shadow:0 4px 0 #9d3932}.action:disabled{opacity:.35;filter:grayscale(.5);cursor:not-allowed}
+    .dpad{display:none;grid-template-columns:38px 38px 38px;grid-template-rows:32px 32px;gap:3px}.dpad button{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:5px;font-size:17px}.up{grid-column:2}.left{grid-column:1;grid-row:2}.down{grid-column:2;grid-row:2}.right{grid-column:3;grid-row:2}
+    .overlay{position:absolute;inset:0;background:rgba(4,11,13,.86);display:grid;place-items:center;padding:18px;z-index:5;backdrop-filter:blur(5px)}.overlay[hidden]{display:none}.card{width:min(620px,100%);max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:clamp(20px,4vw,36px);box-shadow:0 20px 70px #000}.eyebrow{font:11px 'DM Mono',monospace;color:var(--acid);letter-spacing:.13em;text-transform:uppercase}.card h1,.card h2{font-weight:900;letter-spacing:-.045em;margin:5px 0 10px;line-height:.95}.card h1{font-size:clamp(38px,9vw,72px)}.card h2{font-size:clamp(27px,6vw,43px)}.card p{color:var(--muted);font-size:15px;line-height:1.45;margin:0 0 18px}.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:20px 0}.rule{border-top:2px solid var(--line);padding-top:8px;font:12px/1.35 'DM Mono',monospace}.rule b{color:var(--amber)}.big{width:100%;min-height:51px;font-size:15px}
+    .suspects{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:14px 0}.suspect{display:grid;grid-template-columns:32px 1fr;gap:9px;align-items:center;text-align:left;border:1px solid var(--line);border-radius:7px;padding:10px;background:var(--space);color:var(--ink);cursor:pointer}.suspect:hover,.suspect.selected{border-color:var(--acid);background:color-mix(in srgb,var(--acid) 10%,var(--space))}.swatch{width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,255,255,.32)}.suspect b{display:block}.suspect small{font:10px/1.3 'DM Mono',monospace;color:var(--muted)}
+    .report{background:var(--space);border:1px dashed var(--line);border-radius:6px;padding:10px 12px;font:11px/1.5 'DM Mono',monospace;color:var(--muted);margin:12px 0 16px}.report strong{color:var(--ink)}
+    @media(max-width:720px){
+      .game{padding:max(5px,env(safe-area-inset-top)) max(6px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));gap:6px}
+      .hud{grid-template-columns:minmax(0,1fr) auto;padding:7px 9px;gap:6px 10px;border-radius:9px 9px 5px 5px}.mission{grid-column:1/-1}.mission strong{font-size:13px}.mission span{font-size:10px;margin-top:2px;white-space:normal}.meter{width:min(58vw,190px)}.meter-head{font-size:9px}.meter-track{height:8px}.evidence{font-size:9px}.pip{width:16px}
+      .controls{grid-template-columns:minmax(138px,1fr) minmax(138px,1fr);gap:7px;min-height:98px}.dpad{display:grid;grid-template-columns:repeat(3,minmax(42px,48px));grid-template-rows:repeat(2,42px);gap:4px;justify-self:start}.dpad button{font-size:19px;min-width:42px;touch-action:none}.tip{display:none}.actions{grid-column:2;grid-row:1;align-self:stretch;display:grid;grid-template-columns:1fr;gap:7px}.action{min-height:44px;padding:0 8px;font-size:12px}.rules{grid-template-columns:repeat(3,1fr);gap:7px;margin:14px 0}.rule{font-size:9px;padding-top:6px}.card{padding:clamp(14px,5vw,20px);border-radius:10px}.card h1{font-size:clamp(34px,13vw,52px)}.card h2{font-size:clamp(26px,9vw,38px)}.card p{font-size:13px;line-height:1.35;margin-bottom:12px}.eyebrow{font-size:9px}.overlay{padding:7px}.suspects{grid-template-columns:1fr;gap:6px;margin:10px 0}.suspect{padding:8px}.big{min-height:47px}.toast{top:8px;font-size:10px;padding:7px 9px;max-width:92%}.room-label{top:8px;right:8px;bottom:auto;background:rgba(7,17,20,.72);padding:3px 5px;border-radius:3px}}
+    @media(max-width:350px){.controls{grid-template-columns:132px 1fr}.dpad{grid-template-columns:repeat(3,42px)}.hud{gap:5px}.card h1{font-size:36px}.rules{grid-template-columns:1fr}.rule{font-size:10px}.rule br{display:none}}
+    @media(max-height:600px) and (orientation:landscape){.game{grid-template-rows:auto minmax(0,1fr);}.controls{position:absolute;left:max(10px,env(safe-area-inset-left));right:max(10px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));z-index:3;pointer-events:none;min-height:86px}.controls>*{pointer-events:auto}.tip{display:none}.dpad{display:grid}.actions{display:flex;align-self:end;background:rgba(7,17,20,.82);padding:5px;border-radius:8px}.hud{padding:6px 10px}.mission{grid-column:auto}.mission span{display:none}.card{max-height:96%}.card h1{font-size:38px}.rules{margin:10px 0}}
+    @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+<main class="game">
+  <section class="hud" aria-label="Game status">
+    <div class="mission"><strong id="objective">Find the source.</strong><span id="status">Tasks 0/3 · Stink events 0/3</span></div>
+    <div class="meter"><div class="meter-head"><span>SNIFF-O-METER</span><span id="sniffValue">0%</span></div><div class="meter-track"><div class="meter-fill" id="sniffFill"></div></div></div>
+    <div class="evidence">EVIDENCE<div class="pips"><i class="pip"></i><i class="pip"></i><i class="pip"></i></div></div>
+  </section>
+  <section class="stage" id="stage">
+    <canvas id="canvas" aria-label="Top-down spaceship game"></canvas>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="room-label" id="roomLabel">MESS HALL</div>
+    <div class="overlay" id="intro">
+      <div class="card">
+        <div class="eyebrow">A smell-based social deduction game</div>
+        <h1>Someone<br>ripped one.</h1>
+        <p>Four crewmates. One winding ship. A suspicious cloud in the vents. Move through open doorways, follow the scent, collect clues, then call a meeting.</p>
+        <div class="rules"><div class="rule"><b>MOVE</b><br>Arrow keys, WASD, or pad</div><div class="rule"><b>EXPLORE</b><br>Use doorways and corridors</div><div class="rule"><b>ACC–USE</b><br>Get 2 clues before 3 blasts</div></div>
+        <button class="action acid big" id="startBtn">Clock in &amp; investigate</button>
+      </div>
+    </div>
+    <div class="overlay" id="meeting" hidden>
+      <div class="card">
+        <div class="eyebrow">Emergency smell meeting</div><h2>Who dealt it?</h2>
+        <div class="report" id="evidenceReport"></div>
+        <div class="suspects" id="suspects"></div>
+        <button class="action danger big" id="voteBtn" disabled>Cast accusation</button>
+      </div>
+    </div>
+    <div class="overlay" id="result" hidden>
+      <div class="card">
+        <div class="eyebrow" id="resultKicker">Case closed</div><h2 id="resultTitle">You smelt justice.</h2><p id="resultCopy"></p>
+        <button class="action acid big" id="againBtn">Play another shift</button>
+      </div>
+    </div>
+  </section>
+  <section class="controls" aria-label="Game controls">
+    <div class="tip"><b>Move close to the cloud.</b><br>Fresh gas is stronger and more useful as evidence.</div>
+    <div class="dpad" aria-label="Movement pad"><button class="up" data-key="up">▲</button><button class="left" data-key="left">◀</button><button class="down" data-key="down">▼</button><button class="right" data-key="right">▶</button></div>
+    <div class="actions"><button class="action acid" id="sniffBtn">SNIFF</button><button class="action danger" id="meetingBtn" disabled>MEETING</button></div>
+  </section>
+</main>
+<script>
+(function(){
+  var canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d'), stage=document.getElementById('stage');
+  var intro=document.getElementById('intro'), meeting=document.getElementById('meeting'), result=document.getElementById('result');
+  var sniffBtn=document.getElementById('sniffBtn'), meetingBtn=document.getElementById('meetingBtn'), voteBtn=document.getElementById('voteBtn');
+  var toast=document.getElementById('toast'), roomLabel=document.getElementById('roomLabel');
+  var sniffFill=document.getElementById('sniffFill'), sniffValue=document.getElementById('sniffValue');
+  var keys={}, touch={}, running=false, paused=true, last=0, eventTimer=0, evidence=0, tasksDone=0, stinkCount=0, selected=null, culprit=0;
+  var W=900,H=540, cssW=1,cssH=1,dpr=1, player={x:450,y:270,r:18,color:'#f1f4e8',name:'YOU'};
+  var crewBase=[
+    {name:'MANGO',color:'#ffad3f',line:'Claims it was the airlock.'},
+    {name:'BEEP',color:'#4ed6d0',line:'Has been calibrating sensors.'},
+    {name:'PLUM',color:'#d77bea',line:'Says they smell nothing.'},
+    {name:'KETCHUP',color:'#ef5b59',line:'Blames the cafeteria beans.'}
+  ];
+  var crew=[],clouds=[],particles=[];
+  var taskSpots=[{x:112,y:420,label:'REACTOR START'},{x:450,y:92,label:'DATA UPLOAD'},{x:777,y:188,label:'NAV CHART'}];
+  var rooms=[
+    {x:300,y:34,w:300,h:146,label:'CAFETERIA',kind:'cafe'},
+    {x:82,y:68,w:160,h:108,label:'MED BAY'},
+    {x:42,y:216,w:180,h:106,label:'UPPER ENGINE'},
+    {x:40,y:366,w:170,h:126,label:'REACTOR'},
+    {x:238,y:332,w:138,h:128,label:'SECURITY'},
+    {x:404,y:366,w:160,h:118,label:'ELECTRICAL'},
+    {x:330,y:220,w:220,h:108,label:'ADMIN'},
+    {x:604,y:338,w:228,h:148,label:'STORAGE'},
+    {x:702,y:126,w:154,h:128,label:'NAVIGATION'},
+    {x:610,y:48,w:158,h:108,label:'WEAPONS'}
+  ];
+  var halls=[
+    {x:222,y:104,w:98,h:54},{x:582,y:82,w:48,h:52},{x:738,y:134,w:43,h:42},
+    {x:420,y:162,w:60,h:74},{x:536,y:254,w:195,h:55},{x:700,y:236,w:56,h:72},
+    {x:204,y:250,w:145,h:54},{x:100,y:304,w:68,h:76},{x:192,y:396,w:62,h:50},
+    {x:356,y:398,w:60,h:50},{x:548,y:402,w:66,h:52},{x:682,y:298,w:70,h:55}
+  ];
+  function resize(){var r=stage.getBoundingClientRect();dpr=Math.min(devicePixelRatio||1,2);cssW=Math.max(1,r.width);cssH=Math.max(1,r.height);canvas.width=Math.max(1,Math.round(cssW*dpr));canvas.height=Math.max(1,Math.round(cssH*dpr))}
+  function setCamera(){
+    var portraitCrop=window.innerWidth<=720&&cssW/cssH<1.4, s, ox=0, oy=0, vx=0;
+    if(portraitCrop){s=cssH/H;var visibleW=cssW/s;vx=Math.max(0,Math.min(W-visibleW,player.x-visibleW/2));}
+    else{s=Math.min(cssW/W,cssH/H);ox=(cssW-W*s)/2;oy=(cssH-H*s)/2;}
+    ctx.setTransform(dpr*s,0,0,dpr*s,dpr*(ox-vx*s),dpr*oy);
+  }
+  window.addEventListener('resize',resize);window.addEventListener('orientationchange',function(){setTimeout(resize,80)});resize();
+  function reset(){
+    player.x=450;player.y=270; evidence=0;tasksDone=0;stinkCount=0;clouds=[];particles=[];eventTimer=3.5;selected=null;
+    culprit=Math.floor(Math.random()*4);
+    crew=crewBase.map(function(c,i){var p=[[445,104],[774,190],[112,420],[704,414]][i];return {name:c.name,color:c.color,line:c.line,x:p[0],y:p[1],tx:p[0],ty:p[1],speed:34+Math.random()*20,turn:Math.random()*2};});
+    taskSpots.forEach(function(t){t.done=false});updateHud(); meetingBtn.disabled=true; sniffBtn.disabled=false; running=true;paused=false;last=performance.now();
+  }
+  function showToast(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(function(){toast.classList.remove('show')},1800)}
+  function updateHud(){
+    document.getElementById('status').textContent='Tasks '+tasksDone+'/3 · Stink events '+stinkCount+'/3';
+    document.getElementById('objective').textContent=evidence>=2?'Evidence ready. Call a meeting!':(clouds.length?'Get close and sniff the fresh cloud.':'Stay alert. Someone looks gassy.');
+    document.querySelectorAll('.pip').forEach(function(p,i){p.classList.toggle('on',i<evidence)});
+    meetingBtn.disabled=evidence<2;
+  }
+  function dist(a,b){var dx=a.x-b.x,dy=a.y-b.y;return Math.sqrt(dx*dx+dy*dy)}
+  function blocked(x,y){
+    if(x<24||x>876||y<24||y>516)return true;
+    var inRoom=rooms.some(function(r){return x>r.x+9&&x<r.x+r.w-9&&y>r.y+9&&y<r.y+r.h-9});
+    var inHall=halls.some(function(h){return x>h.x&&x<h.x+h.w&&y>h.y&&y<h.y+h.h});
+    return !(inRoom||inHall);
+  }
+  function movePlayer(dx,dy,amount){var steps=Math.ceil(amount/4),step=amount/steps;for(var i=0;i<steps;i++){var nx=player.x+dx*step,ny=player.y+dy*step;if(!blocked(nx,player.y))player.x=nx;if(!blocked(player.x,ny))player.y=ny}}
+  function nudge(dir,amount){var v={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[dir];if(v&&running&&!paused)movePlayer(v[0],v[1],amount||12)}
+  function gasEvent(){
+    var c=crew[culprit];clouds.push({x:c.x,y:c.y,age:0,max:9,who:culprit,room:getRoom(c.x,c.y)});stinkCount++;burst(c.x,c.y,'#b7dc45',16);showToast(stinkCount===1?'PFFFFT… suspicious gas detected.':'Another blast! The ship cannot take much more.');updateHud();
+    if(stinkCount>=3&&evidence<2){setTimeout(function(){end(false,null,true)},900)}
+  }
+  function burst(x,y,color,n){for(var i=0;i<n;i++)particles.push({x:x,y:y,vx:(Math.random()-.5)*60,vy:(Math.random()-.6)*50,a:1,c:color,r:2+Math.random()*4})}
+  function getRoom(x,y){for(var i=0;i<rooms.length;i++){var r=rooms[i];if(x>r.x&&x<r.x+r.w&&y>r.y&&y<r.y+r.h)return r.label}return 'MAIN CORRIDOR'}
+  function update(dt){
+    if(!running||paused)return;
+    var dx=(keys.ArrowRight||keys.d||touch.right?1:0)-(keys.ArrowLeft||keys.a||touch.left?1:0),dy=(keys.ArrowDown||keys.s||touch.down?1:0)-(keys.ArrowUp||keys.w||touch.up?1:0);if(dx&&dy){dx*=.707;dy*=.707}
+    if(dx||dy)movePlayer(dx,dy,145*dt);
+    crew.forEach(function(c){c.turn-=dt;if(c.turn<=0||dist(c,{x:c.tx,y:c.ty})<18){var tries=0;do{c.tx=45+Math.random()*810;c.ty=45+Math.random()*450;tries++}while(blocked(c.tx,c.ty)&&tries<20);c.turn=2+Math.random()*3}var vx=c.tx-c.x,vy=c.ty-c.y,l=Math.sqrt(vx*vx+vy*vy)||1;var tx=c.x+vx/l*c.speed*dt,ty=c.y+vy/l*c.speed*dt;if(!blocked(tx,c.y))c.x=tx;else c.turn=0;if(!blocked(c.x,ty))c.y=ty;else c.turn=0});
+    clouds.forEach(function(c){c.age+=dt});clouds=clouds.filter(function(c){return c.age<c.max});
+    particles.forEach(function(p){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=8*dt;p.a-=dt*.75});particles=particles.filter(function(p){return p.a>0});
+    eventTimer-=dt;if(eventTimer<=0&&stinkCount<3){gasEvent();eventTimer=8+Math.random()*4}
+    var nearest=0;clouds.forEach(function(c){var power=Math.max(0,1-dist(player,c)/170)*(1-c.age/c.max);nearest=Math.max(nearest,power)});var smell=Math.round(nearest*100);sniffFill.style.width=smell+'%';sniffValue.textContent=smell+'%';roomLabel.textContent=getRoom(player.x,player.y);
+    taskSpots.forEach(function(t){if(!t.done&&dist(player,t)<34){t.done=true;tasksDone++;burst(t.x,t.y,'#5ee5da',12);showToast(t.label+' complete. Very professional.');updateHud()}});
+  }
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
+  function chamferRoom(r){var c=r.kind==='cafe'?22:9;ctx.beginPath();ctx.moveTo(r.x+c,r.y);ctx.lineTo(r.x+r.w-c,r.y);ctx.lineTo(r.x+r.w,r.y+c);ctx.lineTo(r.x+r.w,r.y+r.h-c);ctx.lineTo(r.x+r.w-c,r.y+r.h);ctx.lineTo(r.x+c,r.y+r.h);ctx.lineTo(r.x,r.y+r.h-c);ctx.lineTo(r.x,r.y+c);ctx.closePath()}
+  function draw(){
+    ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#050b0d';ctx.fillRect(0,0,canvas.width,canvas.height);setCamera();ctx.fillStyle='#050b0d';ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='#11242a';ctx.lineWidth=1;for(var x=0;x<W;x+=30){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(var y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+    ctx.fillStyle='#0a171b';ctx.strokeStyle='#29434a';ctx.lineWidth=8;ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(440,18);ctx.lineTo(585,26);ctx.lineTo(650,39);ctx.lineTo(786,94);ctx.lineTo(872,172);ctx.lineTo(874,255);ctx.lineTo(842,302);ctx.lineTo(851,485);ctx.lineTo(780,511);ctx.lineTo(413,505);ctx.lineTo(314,480);ctx.lineTo(121,511);ctx.lineTo(29,477);ctx.lineTo(25,220);ctx.lineTo(70,188);ctx.lineTo(86,48);ctx.lineTo(268,40);ctx.closePath();ctx.fill();ctx.stroke();ctx.lineJoin='miter';
+    halls.forEach(function(h){ctx.fillStyle='#132b31';ctx.strokeStyle='#36565e';ctx.lineWidth=3;ctx.fillRect(h.x,h.y,h.w,h.h);ctx.strokeRect(h.x,h.y,h.w,h.h);ctx.strokeStyle='#203b42';ctx.lineWidth=1;for(var s=h.x+8;s<h.x+h.w;s+=16){ctx.beginPath();ctx.moveTo(s,h.y+5);ctx.lineTo(s,h.y+h.h-5);ctx.stroke()}});
+    rooms.forEach(function(r,i){ctx.fillStyle=i%2?'#102a30':'#10252b';ctx.strokeStyle='#42636b';ctx.lineWidth=4;chamferRoom(r);ctx.fill();ctx.stroke();ctx.fillStyle='#8ba1a5';ctx.font='500 10px DM Mono';ctx.textAlign='left';ctx.fillText(r.label,r.x+13,r.y+20);ctx.strokeStyle='#24454c';ctx.lineWidth=1;for(var q=r.x+18;q<r.x+r.w-16;q+=22){ctx.beginPath();ctx.moveTo(q,r.y+r.h-16);ctx.lineTo(q+7,r.y+r.h-9);ctx.stroke()}});
+    halls.forEach(function(h){ctx.fillStyle='#132b31';ctx.fillRect(h.x+4,h.y+4,h.w-8,h.h-8)});
+    ctx.strokeStyle='#5b7a80';ctx.lineWidth=3;[[246,119,9,22],[296,119,9,22],[598,97,9,22],[621,97,9,22],[438,176,24,9],[438,219,24,9],[718,252,22,9],[718,293,22,9],[207,264,9,22],[334,264,9,22],[115,316,35,9],[115,360,35,9],[207,408,9,26],[244,408,9,26],[362,410,9,25],[405,410,9,25],[552,414,9,26],[603,414,9,26],[695,341,30,9]].forEach(function(d){ctx.fillStyle='#b9db49';ctx.fillRect(d[0],d[1],d[2],d[3]);ctx.strokeRect(d[0],d[1],d[2],d[3])});
+    ctx.fillStyle='#1c3940';ctx.strokeStyle='#4c6f76';ctx.lineWidth=2;roundRect(382,72,136,62,18);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(450,103,22,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(419,103,8,0,Math.PI*2);ctx.arc(481,103,8,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='#2c5058';ctx.lineWidth=5;ctx.beginPath();ctx.arc(112,420,36,-1.1,1.1);ctx.stroke();ctx.beginPath();ctx.arc(112,420,22,-1.1,1.1);ctx.stroke();
+    taskSpots.forEach(function(t){ctx.save();ctx.translate(t.x,t.y);ctx.fillStyle=t.done?'#234144':'#f3c454';ctx.strokeStyle=t.done?'#4fc6bd':'#ffe49b';ctx.lineWidth=3;roundRect(-15,-15,30,30,4);ctx.fill();ctx.stroke();if(!t.done){ctx.strokeStyle='#33280f';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-7,0);ctx.lineTo(7,0);ctx.moveTo(0,-7);ctx.lineTo(0,7);ctx.stroke()}ctx.restore()});
+    clouds.forEach(function(c){var fade=1-c.age/c.max;for(var i=0;i<5;i++){var ang=i*1.75+c.age*.22,rr=15+i*4+Math.sin(c.age+i)*3;ctx.beginPath();ctx.arc(c.x+Math.cos(ang)*15,c.y+Math.sin(ang)*10,rr,0,Math.PI*2);ctx.fillStyle='rgba(175,221,59,'+(fade*.12)+')';ctx.fill()}ctx.setLineDash([4,5]);ctx.strokeStyle='rgba(210,240,85,'+(fade*.5)+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(c.x,c.y,25+c.age*8,0,Math.PI*2);ctx.stroke();ctx.setLineDash([])});
+    crew.forEach(function(c){drawCrew(c,false)});drawCrew(player,true);
+    particles.forEach(function(p){ctx.globalAlpha=p.a;ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1});
+  }
+  function drawCrew(c,isPlayer){ctx.save();ctx.translate(c.x,c.y);ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,19,19,7,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=c.color;roundRect(-15,-17,30,35,12);ctx.fill();ctx.fillRect(-12,12,8,13);ctx.fillRect(5,12,8,13);ctx.fillStyle=isPlayer?'#d8eef1':'#b9e5e7';ctx.strokeStyle='#1d3539';ctx.lineWidth=3;roundRect(-7,-12,19,11,5);ctx.fill();ctx.stroke();ctx.fillStyle=isPlayer?'#f6f7ec':'#dbe5e1';ctx.font='800 10px Nunito';ctx.textAlign='center';ctx.fillText(c.name,0,-25);if(isPlayer){ctx.strokeStyle='#c9ef43';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,1,23,0,Math.PI*2);ctx.stroke()}ctx.restore()}
+  function loop(t){var dt=Math.min(.035,(t-last)/1000||0);last=t;update(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+  function sniff(){if(!running||paused)return;var best=null,bestD=999;clouds.forEach(function(c){var d=dist(player,c);if(d<bestD){best=c;bestD=d}});if(!best||bestD>100){showToast('Nothing but recycled air. Get closer to the cloud.');return}if(best.sniffed){showToast('Already logged this particular stink.');return}best.sniffed=true;evidence++;var age=best.age<3?'fresh':'fading';var nearby=crew.map(function(c,i){return {i:i,d:dist(c,best)}}).sort(function(a,b){return a.d-b.d})[0];best.clue='Cloud in '+best.room+' was '+age+'. '+crew[nearby.i].name+' was nearest.';burst(player.x,player.y,'#f6d36a',10);showToast('Evidence logged: '+best.clue);updateHud()}
+  sniffBtn.addEventListener('click',sniff);
+  function openMeeting(){if(evidence<2||paused)return;paused=true;selected=null;voteBtn.disabled=true;var sniffed=clouds.filter(function(c){return c.sniffed});var notes=sniffed.map(function(c,i){return '<strong>CLUE '+(i+1)+'</strong> — '+c.clue}).join('<br>');document.getElementById('evidenceReport').innerHTML=notes+'<br><strong>TASKS</strong> — '+tasksDone+' maintenance checks cleared.';var wrap=document.getElementById('suspects');wrap.innerHTML='';crew.forEach(function(c,i){var b=document.createElement('button');b.className='suspect';b.innerHTML='<span class="swatch" style="background:'+c.color+'"></span><span><b>'+c.name+'</b><small>“'+c.line+'”</small></span>';b.addEventListener('click',function(){selected=i;document.querySelectorAll('.suspect').forEach(function(s){s.classList.remove('selected')});b.classList.add('selected');voteBtn.disabled=false});wrap.appendChild(b)});meeting.hidden=false}
+  meetingBtn.addEventListener('click',openMeeting);
+  voteBtn.addEventListener('click',function(){if(selected===null)return;end(selected===culprit,selected,false)});
+  function end(win,pick,overrun){running=false;paused=true;meeting.hidden=true;result.hidden=false;var c=crew[culprit];document.getElementById('resultKicker').textContent=win?'Case closed':(overrun?'Ship evacuated':'Wrong vent');document.getElementById('resultTitle').textContent=win?'You smelt justice.':(overrun?'Overpowered by odor.':'Silent but incorrect.');document.getElementById('resultCopy').textContent=win?c.name+' cracks under questioning and admits to the '+stinkCount+'-blast spree. The ship can breathe easy.':(overrun?c.name+' got away with it. Collect two clues and call the meeting before the third blast next time.':'You accused '+crew[pick].name+', but the true culprit was '+c.name+'. Follow the freshest clouds and note who stays close.');}
+  document.getElementById('startBtn').addEventListener('click',function(){intro.hidden=true;reset()});document.getElementById('againBtn').addEventListener('click',function(){result.hidden=true;reset()});
+  window.addEventListener('keydown',function(e){var k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].indexOf(e.key)>=0)e.preventDefault();if(!e.repeat){var dir={ArrowUp:'up',w:'up',ArrowDown:'down',s:'down',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right'}[k];if(dir)nudge(dir,10)}if(e.key===' '){sniff()}});window.addEventListener('keyup',function(e){var k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false});
+  document.querySelectorAll('.dpad button').forEach(function(b){var k=b.dataset.key;function on(e){e.preventDefault();touch[k]=true;nudge(k,14);if(b.setPointerCapture&&e.pointerId!==undefined)b.setPointerCapture(e.pointerId)}function off(e){e.preventDefault();touch[k]=false}b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointercancel',off);b.addEventListener('lostpointercapture',off)});
+})();
+</script>
+</body>
+</html>
